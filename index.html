@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cupcake">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Returns Calculator — Stonks Vibes</title>
+  <meta name="description" content="A modern, playful stock returns calculator for Gen‑Z. Type any ticker (AAPL, MSFT, VOO) and get live data, charts, and shareable results." />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    :root { --brand-1: #7c3aed; --brand-2: #06b6d4; --brand-3: #22c55e; }
+    body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji'; }
+    .hero-gradient {
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(124,58,237,.25), transparent),
+                  radial-gradient(1000px 500px at 110% 10%, rgba(34,197,94,.18), transparent),
+                  linear-gradient(180deg, #0f172a 0%, #0b1220 100%);
+    }
+    .card-glow { box-shadow: 0 10px 30px rgba(124,58,237,.15), 0 6px 12px rgba(2,6,23,.3); }
+    .btn-bouncy { transition: transform .08s ease, box-shadow .2s ease; }
+    .btn-bouncy:active { transform: translateY(2px) scale(.98); }
+    .ring-brand { box-shadow: 0 0 0 3px rgba(124,58,237,.25); }
+  </style>
+</head>
+<body class="min-h-screen hero-gradient text-base-100">
+  <header class="container mx-auto px-4 pt-8 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-600 to-cyan-400 animate-pulse"></div>
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Stock Returns Calculator</h1>
+        <p class="text-sm opacity-80">Live data • Playful vibes • Share your stonks</p>
+      </div>
+    </div>
+    <a href="#calculator" class="btn btn-ghost btn-sm">Start ↓</a>
+  </header>
+
+  <main id="calculator" class="container mx-auto px-4 pb-24">
+    <!-- Inputs & Results -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Inputs Card -->
+      <div class="lg:col-span-1">
+        <div class="card card-compact bg-base-200/20 backdrop-blur border border-base-200/20 card-glow">
+          <div class="card-body">
+            <h2 class="card-title">Your Game Plan</h2>
+            <div class="grid grid-cols-1 gap-4 mt-2">
+              <label class="form-control w-full">
+                <div class="label"><span class="label-text text-base-100">Stock</span><span class="label-text-alt">Try: AAPL, MSFT, VOO</span></div>
+                <input id="etf" type="text" placeholder="AAPL" value="VOO" class="input input-bordered bg-base-100/80 text-base-content uppercase tracking-wider" />
+              </label>
+              <label class="form-control w-full">
+                <div class="label"><span class="label-text text-base-100">Investment Amount (USD)</span></div>
+                <input id="amount" type="number" min="1" step="1" placeholder="1000" class="input input-bordered bg-base-100/80 text-base-content" />
+              </label>
+              <div class="grid grid-cols-2 gap-4">
+                <label class="form-control">
+                  <div class="label"><span class="label-text text-base-100">Start date</span></div>
+                  <input id="startDate" type="date" class="input input-bordered bg-base-100/80 text-base-content" />
+                </label>
+                <label class="form-control">
+                  <div class="label"><span class="label-text text-base-100">End date</span></div>
+                  <input id="endDate" type="date" class="input input-bordered bg-base-100/80 text-base-content" />
+                </label>
+              </div>
+
+              <button id="calcBtn" class="btn btn-primary btn-lg mt-2 btn-bouncy bg-gradient-to-r from-fuchsia-500 to-cyan-400 border-none hover:brightness-110">
+                Calculate 🚀
+              </button>
+              <p id="alert" class="text-warning text-sm hidden"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 card bg-base-200/20 backdrop-blur border border-base-200/20 card-glow">
+          <div class="card-body gap-2">
+            <h3 class="font-bold">Share the clout</h3>
+            <div class="flex flex-wrap gap-3">
+              <button id="copyBtn" class="btn btn-outline btn-sm btn-bouncy">Copy Result</button>
+              <button id="twitterBtn" class="btn btn-info btn-sm btn-bouncy">Share on X/Twitter</button>
+              <button id="nativeShareBtn" class="btn btn-accent btn-sm btn-bouncy">Share</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results + Chart -->
+      <div class="lg:col-span-2">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="stat bg-base-200/20 border border-base-200/20 rounded-2xl overflow-hidden">
+            <div class="stat-title">Invested</div>
+            <div id="investedAmt" class="stat-value text-lg md:text-xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight">—</div>
+            <div class="stat-desc">Initial amount</div>
+          </div>
+          <div class="stat bg-base-200/20 border border-base-200/20 rounded-2xl overflow-hidden">
+            <div class="stat-title">Total Return</div>
+            <div id="totalReturn" class="stat-value text-lg md:text-xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight">—</div>
+            <div id="totalEmoji" class="stat-desc text-2xl">🙂</div>
+          </div>
+          <div class="stat bg-base-200/20 border border-base-200/20 rounded-2xl overflow-hidden">
+            <div class="stat-title">Percent Return</div>
+            <div id="percentReturn" class="stat-value text-xl md:text-2xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight">—</div>
+            <div class="stat-desc">vs. initial</div>
+          </div>
+          <div class="stat bg-base-200/20 border border-base-200/20 rounded-2xl overflow-hidden">
+            <div class="stat-title">CAGR</div>
+            <div id="cagr" class="stat-value text-xl md:text-2xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight">—</div>
+            <div class="stat-desc">annualized</div>
+          </div>
+        </div>
+
+        <div class="card bg-base-200/20 backdrop-blur border border-base-200/20 card-glow">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <h3 class="card-title">Invested vs Return</h3>
+              <span id="dateNote" class="badge badge-outline hidden">Dates adjusted to trading days</span>
+            </div>
+            <div class="relative w-full h-72 md:h-80">
+              <canvas id="chart" class="w-full h-full"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div id="memeZone" class="mt-6 text-center text-3xl"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container mx-auto px-4 pb-12 text-center opacity-70 text-sm">
+    Built for vibes. Data from Yahoo Finance (unofficial). Not financial advice.
+  </footer>
+
+  <script>
+    // Utils
+    const $ = (id) => document.getElementById(id);
+    const fmtUSD = (n) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+    const fmtPct = (n) => (n*100).toFixed(2) + '%';
+
+    // Defaults
+    const todayStr = () => new Date().toISOString().slice(0,10);
+    const defaultStart = () => { const d = new Date(); d.setFullYear(d.getFullYear()-5); return d.toISOString().slice(0,10); };
+
+    $('amount').value = 1000;
+    $('startDate').value = defaultStart();
+    $('endDate').value = todayStr();
+
+    let chart; // Chart.js instance
+
+    async function fetchJsonWithFallback(urls) {
+      for (const u of urls) {
+        try {
+          const res = await fetch(u, { headers: { 'Accept': 'application/json' }, referrerPolicy: 'no-referrer', cache: 'no-cache' });
+          if (!res.ok) continue;
+          const txt = await res.text();
+          // Some proxies return text/plain; parse manually
+          const json = JSON.parse(txt);
+          return json;
+        } catch (e) {
+          // Try next fallback
+          continue;
+        }
+      }
+      throw new Error('Network error fetching prices (CORS).');
+    }
+
+    async function fetchYahooDaily(symbol, startDate, endDate) {
+      // Yahoo Finance chart API: timestamps in seconds; interval 1d
+      const period1 = Math.floor(new Date(startDate).getTime() / 1000);
+      // Add one day buffer to include end date
+      const period2 = Math.floor((new Date(endDate).getTime() + 24*3600*1000) / 1000);
+      const base1 = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${period1}&period2=${period2}&interval=1d&includeAdjustedClose=true`;
+      const base2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${period1}&period2=${period2}&interval=1d&includeAdjustedClose=true`;
+
+      const urls = [
+        base1,
+        base2,
+        `https://cors.isomorphic-git.org/${base1}`,
+        `https://cors.isomorphic-git.org/${base2}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(base1)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(base2)}`
+      ];
+
+      const json = await fetchJsonWithFallback(urls);
+      const r = json?.chart?.result?.[0];
+      if (!r) throw new Error('No data for symbol');
+      const ts = r.timestamp || [];
+      const close = r.indicators?.adjclose?.[0]?.adjclose || r.indicators?.quote?.[0]?.close || [];
+      if (!ts.length || !close.length) throw new Error('No price series available');
+      // Map to array of {dateStr, price}
+      const out = ts.map((t, i) => ({
+        date: new Date(t*1000),
+        dateStr: new Date(t*1000).toISOString().slice(0,10),
+        price: close[i]
+      })).filter(p => Number.isFinite(p.price));
+      return out;
+    }
+
+    function nearestTradingDayIdx(series, targetDateStr, preferNext = false) {
+      // series is sorted ascending by date
+      const idx = series.findIndex(p => p.dateStr === targetDateStr);
+      if (idx !== -1) return { idx, adjusted: false };
+      // If not found, pick nearest by date
+      const target = new Date(targetDateStr);
+      let best = -1, bestDiff = Infinity;
+      for (let i=0;i<series.length;i++) {
+        const diff = series[i].date - target;
+        const absDiff = Math.abs(diff);
+        if (absDiff < bestDiff) { best = i; bestDiff = absDiff; }
+        if (preferNext && diff >= 0) { best = i; break; }
+      }
+      return { idx: Math.max(0, Math.min(series.length-1, best)), adjusted: true };
+    }
+
+    function computeMetrics(series, startIdx, endIdx, amount) {
+      const startPrice = series[startIdx].price;
+      const endPrice = series[endIdx].price;
+      if (!(startPrice>0) || !(endPrice>0)) throw new Error('Invalid prices');
+      const shares = amount / startPrice;
+      const finalValue = shares * endPrice;
+      const totalReturn = finalValue - amount;
+      const percentReturn = (finalValue/amount) - 1;
+      const years = Math.max(1/365.25, (series[endIdx].date - series[startIdx].date) / (365.25*24*3600*1000));
+      const cagr = Math.pow(finalValue/amount, 1/years) - 1;
+
+      // Equity curve points
+      const labels = [];
+      const values = [];
+      for (let i=startIdx;i<=endIdx;i++) {
+        labels.push(series[i].dateStr);
+        values.push(shares * series[i].price);
+      }
+      return { startPrice, endPrice, finalValue, totalReturn, percentReturn, cagr, labels, values };
+    }
+
+    function performanceEmoji(pct) {
+      if (pct <= -0.001) return '😅';
+      if (pct > 1.0) return '🔥';
+      if (pct > 0.2) return '🚀';
+      if (pct > 0.05) return '😊';
+      return '🙂';
+    }
+
+    function performanceMeme(pct) {
+      if (pct > 1.0) return '🔥 To the moon and beyond!';
+      if (pct > 0.5) return '🪐 Moon mission confirmed.';
+      if (pct > 0.2) return '🚀 Rocket fuel engaged.';
+      if (pct > 0.05) return '😎 Diamond hands paying off.';
+      if (pct >= 0) return '🤝 Break-even bros.';
+      if (pct > -0.2) return '😬 It do be like that sometimes.';
+      return '😭 Bear hug. Next time, champ.';
+    }
+
+    function showAlert(msg) {
+      const el = $('alert');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      el.classList.add('animate-pulse');
+      setTimeout(()=>{ el.classList.remove('animate-pulse'); }, 1200);
+    }
+
+    function clearAlert() { $('alert').classList.add('hidden'); $('alert').textContent=''; }
+
+    function updateShareButtons(text) {
+      $('copyBtn').onclick = async () => {
+        try { await navigator.clipboard.writeText(text); showAlert('Copied to clipboard ✨'); } catch(e) { showAlert('Copy failed.'); }
+      };
+      $('twitterBtn').onclick = () => {
+        const u = new URL('https://twitter.com/intent/tweet');
+        u.searchParams.set('text', text);
+        window.open(u.toString(), '_blank');
+      };
+      $('nativeShareBtn').onclick = async () => {
+        if (navigator.share) {
+          try { await navigator.share({ text, url: location.href, title: 'Stock Returns Calculator' }); } catch(e){}
+        } else {
+          showAlert('Sharing not supported. Try Copy or Twitter!');
+        }
+      };
+    }
+
+    function renderChart(labels, portfolioValues, investedAmount) {
+      const ctx = $('chart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0,0,0,240);
+      gradient.addColorStop(0, 'rgba(124,58,237,0.35)');
+      gradient.addColorStop(1, 'rgba(6,182,212,0.05)');
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Portfolio Value',
+              data: portfolioValues,
+              tension: 0.25,
+              fill: true,
+              backgroundColor: gradient,
+              borderColor: '#7c3aed',
+              borderWidth: 2,
+              pointRadius: 0,
+              hoverRadius: 4,
+            },
+            {
+              label: 'Invested',
+              data: labels.map(() => investedAmount),
+              tension: 0,
+              fill: false,
+              borderColor: '#22c55e',
+              borderDash: [6,4],
+              borderWidth: 2,
+              pointRadius: 0,
+              hoverRadius: 0,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtUSD(ctx.parsed.y)}` } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } },
+            y: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { callback: (v)=> '$' + v.toLocaleString() } }
+          }
+        }
+      });
+    }
+
+    function fireConfetti() {
+      const duration = 1600;
+      const end = Date.now() + duration;
+      const colors = ['#7c3aed','#06b6d4','#22c55e','#f59e0b'];
+      (function frame(){
+        confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors });
+        confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      })();
+    }
+
+    async function calculate() {
+      clearAlert();
+      const symbol = $('etf').value.trim().toUpperCase();
+      const amount = parseFloat($('amount').value);
+      const start = $('startDate').value;
+      const end = $('endDate').value;
+
+      // Basic validation
+      if (!symbol) return showAlert('Please enter a stock ticker.');
+      if (!Number.isFinite(amount) || amount <= 0) return showAlert('Enter a valid amount > $0.');
+      if (!start || !end) return showAlert('Please set both dates.');
+      if (new Date(start) > new Date(end)) return showAlert('Start date must be before end date.');
+      const today = new Date().toISOString().slice(0,10);
+      if (end > today) { $('endDate').value = today; }
+
+      const btn = $('calcBtn');
+      const original = btn.innerHTML;
+      btn.innerHTML = 'Crunching numbers… ⏳';
+      btn.classList.add('loading');
+
+      try {
+        const series = await fetchYahooDaily(symbol, start, $('endDate').value);
+        if (!series.length) throw new Error('No series points.');
+
+        // Adjust to nearest trading days
+        const s = nearestTradingDayIdx(series, start, true);
+        const e = nearestTradingDayIdx(series, $('endDate').value, false);
+        if (e.idx <= s.idx) throw new Error('Not enough data between dates.');
+        $('dateNote').classList.toggle('hidden', !(s.adjusted || e.adjusted));
+
+        const { finalValue, totalReturn, percentReturn, cagr, labels, values } = computeMetrics(series, s.idx, e.idx, amount);
+
+        // Update stats
+        $('investedAmt').textContent = fmtUSD(amount);
+        $('totalReturn').textContent = fmtUSD(totalReturn);
+        $('percentReturn').textContent = fmtPct(percentReturn);
+        $('cagr').textContent = fmtPct(cagr);
+        const emoji = performanceEmoji(percentReturn);
+        $('totalEmoji').textContent = emoji;
+        $('memeZone').textContent = performanceMeme(percentReturn);
+
+        // Chart (Invested vs Portfolio Value)
+        renderChart(labels, values, amount);
+
+        // Confetti on positive
+        if (percentReturn > 0) fireConfetti();
+
+        // Update share text
+        const shareText = `I would have earned ${fmtUSD(totalReturn)} (ending value ${fmtUSD(finalValue)}) by investing in ${symbol} since ${series[s.idx].dateStr}! ${emoji} #Investing #Stonks`;
+        updateShareButtons(shareText);
+      } catch (e) {
+        console.error(e);
+        showAlert(e.message || 'Something went wrong. Try different dates or symbol.');
+      } finally {
+        btn.innerHTML = original;
+        btn.classList.remove('loading');
+      }
+    }
+
+    $('calcBtn').addEventListener('click', calculate);
+    // Also recalc when Enter pressed in inputs
+    ['etf','amount','startDate','endDate'].forEach(id => $(id).addEventListener('keydown', (e)=>{ if (e.key==='Enter') calculate(); }));
+
+    // Do an initial calc for default values after a short delay to allow layout
+    setTimeout(calculate, 400);
+  </script>
+</body>
+</html>
